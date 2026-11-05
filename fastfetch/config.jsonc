@@ -1,0 +1,101 @@
+// macOS variant of config.jsonc: same layout, built-in Apple logo.
+// Compact pastel layout. Rounded badges require a Nerd Font.
+// Text follows your terminal foreground so it works with dark and light themes.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    // Fastfetch's built-in, colored Apple logo. It's text, so it works in tmux.
+    "source": "macOS",
+    "padding": {
+      "top": 2,
+      "left": 2,
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": " ›  ",
+    "color": {
+      "separator": "#debc9d"
+    },
+    "size": {
+      "ndigits": 2
+    },
+    "duration": {
+      "abbreviation": false
+    }
+  },
+  "modules": [
+    "break",
+    {
+      "type": "command",
+      "key": " ",
+      "text": "os=$(uname -s); if [ -r /etc/os-release ]; then . /etc/os-release; os=$NAME; elif [ \"$os\" = Darwin ]; then os=macOS; fi; desktop=${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-Desktop}}; os=$(printf '%s' \"$os\" | tr '[:lower:]' '[:upper:]'); desktop=$(printf '%s' \"$desktop\" | tr '[:lower:]' '[:upper:]'); printf '  \\033[38;2;255;173;173m\\033[48;2;255;173;173m\\033[38;2;58;45;39m\\033[1m %s \\033[0m\\033[38;2;255;173;173m\\033[0m  \\033[38;2;190;202;145m\\033[48;2;190;202;145m\\033[38;2;58;45;39m\\033[1m %s \\033[0m\\033[38;2;190;202;145m\\033[0m' \"$os\" \"$desktop\"",
+      "keyColor": "default",
+      "format": "{result}",
+      "keyWidth": 0
+    },
+    "break",
+    {
+      "type": "title",
+      "key": "  \u001b[38;2;255;173;173m\u001b[39m  user   ",
+      "format": "{user-name}@{host-name}",
+      "outputColor": "#beca91"
+    },
+    {
+      "type": "os",
+      "key": "  \u001b[38;2;190;202;145m\u001b[39m  os     ",
+      "format": "{name} {arch}"
+    },
+    {
+      "type": "kernel",
+      "key": "  \u001b[38;2;222;188;157m\u001b[39m  kernel "
+    },
+    {
+      // Approximate install age from the root filesystem creation time.
+      "type": "command",
+      "key": "  \u001b[38;2;255;173;173m󰔚\u001b[39m  age    ",
+      "text": "now=$(date +%s); case $(uname -s) in Darwin) born=$(stat -f %B / 2>/dev/null) ;; Linux) born=$(stat -c %W / 2>/dev/null); [ \"${born:-0}\" -gt 0 ] || born=$(stat -c %Y /etc 2>/dev/null) ;; esac; if [ -n \"$born\" ] && [ \"$born\" -gt 0 ]; then age=$(( (now - born) / 86400 )); years=$((age / 365)); months=$((age % 365 / 30)); days=$((age % 365 % 30)); [ \"$years\" -gt 0 ] && printf '%sy ' \"$years\"; [ \"$months\" -gt 0 ] && printf '%smo ' \"$months\"; printf '%sd' \"$days\"; else printf 'unknown'; fi",
+      "format": "{result}"
+    },
+    {
+      "type": "packages",
+      "key": "  \u001b[38;2;255;185;120m󰏖\u001b[39m  pkgs   "
+    },
+    "break",
+    {
+      "type": "cpu",
+      "key": "  \u001b[38;2;255;173;173m\u001b[39m  cpu    "
+    },
+    {
+      "type": "gpu",
+      "key": "  \u001b[38;2;190;202;145m󰢮\u001b[39m  gpu    "
+    },
+    {
+      "type": "memory",
+      "key": "  \u001b[38;2;222;188;157m󰍛\u001b[39m  memory ",
+      "format": "{used} / {total} ({percentage})"
+    },
+    "break",
+    {
+      "type": "wm",
+      "key": "  \u001b[38;2;255;174;112m\u001b[39m  wm     "
+    },
+    {
+      "type": "shell",
+      "key": "  \u001b[38;2;255;185;120m\u001b[39m  shell  "
+    },
+    {
+      "type": "uptime",
+      "key": "  \u001b[38;2;190;202;145m󰥔\u001b[39m  uptime "
+    },
+    "break",
+    {
+      "type": "custom",
+      "key": " ",
+      "format": "  \u001b[38;2;255;185;120m󰮯\u001b[0m  \u001b[38;2;255;173;173m•\u001b[0m  \u001b[38;2;190;202;145m•\u001b[0m  \u001b[38;2;222;188;157m•\u001b[0m  \u001b[38;2;255;174;112m•\u001b[0m",
+      "keyColor": "default",
+      "keyWidth": 0
+    },
+    "break"
+  ]
+}

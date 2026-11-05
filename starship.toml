@@ -1,0 +1,53 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$cmd_duration\
+$line_break\
+$python\
+$character"""
+
+scan_timeout = 100
+
+# Colors from the Aquarium Dark palette
+[directory]
+style = "bold #cddbf9"
+
+[character]
+success_symbol = "[❯](#f6bbe7)"
+error_symbol = "[❯](#d95e59)"
+vimcmd_symbol = "[❮](#caf6bb)"
+
+[git_branch]
+format = "[$branch]($style)"
+style = "#8791a5"
+
+[git_status]
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](#f6bbe7) ($ahead_behind$stashed)]($style)"
+style = "#b8dceb"
+conflicted = "​"
+untracked = "​"
+modified = "​"
+staged = "​"
+renamed = "​"
+deleted = "​"
+stashed = "≡"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "#8791a5"
+
+[cmd_duration]
+format = "[$duration]($style) "
+style = "#e6dfb8"
+
+[python]
+format = "[$virtualenv]($style) "
+style = "#8791a5"
+detect_extensions = []
+detect_files = []
