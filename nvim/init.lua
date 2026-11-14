@@ -50,7 +50,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
 })
 
 vim.pack.add({
-  "https://github.com/folke/tokyonight.nvim",
+  "https://github.com/sainnhe/everforest",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/neovim/nvim-lspconfig",
   "https://github.com/mason-org/mason.nvim",
@@ -63,9 +63,11 @@ vim.pack.add({
   "https://github.com/sindrets/diffview.nvim",
 })
 
--- Night variant matches the kitty and starship palettes
-require("tokyonight").setup({ style = "night" })
-vim.cmd.colorscheme("tokyonight-night")
+-- Dark hard background (#272e33) matches the kitty, ghostty, starship and tmux palettes
+vim.o.background = "dark"
+vim.g.everforest_background = "hard"
+vim.g.everforest_better_performance = 1
+vim.cmd.colorscheme("everforest")
 
 -- Treesitter: install parsers, then highlight any filetype that has one
 require("nvim-treesitter").install({

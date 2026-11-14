@@ -13,24 +13,24 @@ $python\
 $character"""
 
 scan_timeout = 100
-palette = "tokyo_night"
+palette = "everforest_dark_hard"
 
-# Colors from the Tokyo Night palette (see [palettes.tokyo_night] below)
+# Colors from the Everforest Dark Hard palette (see [palettes.everforest_dark_hard] below)
 [directory]
-style = "bold tn_blue"
+style = "bold ef_green"
 
 [character]
-success_symbol = "[❯](tn_magenta)"
-error_symbol = "[❯](tn_red)"
-vimcmd_symbol = "[❮](tn_green)"
+success_symbol = "[❯](ef_purple)"
+error_symbol = "[❯](ef_red)"
+vimcmd_symbol = "[❮](ef_aqua)"
 
 [git_branch]
 format = "[$branch]($style)"
-style = "tn_comment"
+style = "ef_grey"
 
 [git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](tn_magenta)( $ahead_behind$stashed) ]($style)"
-style = "tn_cyan"
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](ef_purple)( $ahead_behind$stashed) ]($style)"
+style = "ef_aqua"
 conflicted = "​"
 untracked = "​"
 modified = "​"
@@ -41,24 +41,23 @@ stashed = "≡"
 
 [git_state]
 format = ' \([$state( $progress_current/$progress_total)]($style)\) '
-style = "tn_comment"
+style = "ef_grey"
 
 [cmd_duration]
 format = "[$duration]($style) "
-style = "tn_yellow"
+style = "ef_yellow"
 
 [python]
 format = "[$virtualenv]($style) "
-style = "tn_comment"
+style = "ef_grey"
 detect_extensions = []
 detect_files = []
 
-# https://github.com/folke/tokyonight.nvim (night variant)
-[palettes.tokyo_night]
-tn_blue = "#7aa2f7"
-tn_cyan = "#7dcfff"
-tn_green = "#9ece6a"
-tn_magenta = "#bb9af7"
-tn_red = "#f7768e"
-tn_yellow = "#e0af68"
-tn_comment = "#737aa2"
+# https://github.com/sainnhe/everforest (dark, hard)
+[palettes.everforest_dark_hard]
+ef_green = "#a7c080"
+ef_aqua = "#83c092"
+ef_purple = "#d699b6"
+ef_red = "#e67e80"
+ef_yellow = "#dbbc7f"
+ef_grey = "#859289"
