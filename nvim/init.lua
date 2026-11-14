@@ -208,11 +208,30 @@ fzf.setup({
   },
 })
 
+-- Long merged folder chains (Maven packages) keep their last two names and
+-- shorten the rest to initials: test/java/com/acme/billing/service becomes
+-- t/j/c/a/billing/service. Dot-folders keep the dot (.github -> .g).
+local function compact_group(path)
+  if vim.fn.strchars(path) <= 24 then
+    return path
+  end
+  local parts = vim.split(path, "/", { plain = true })
+  for i = 1, #parts - 2 do
+    parts[i] = vim.fn.strcharpart(parts[i], 0, vim.startswith(parts[i], ".") and 2 or 1)
+  end
+  return table.concat(parts, "/")
+end
+
 -- File sidebar: follows the current file and shows dotfiles and gitignored files
 require("nvim-tree").setup({
   hijack_directories = { auto_open = false },
-  view = { width = { min = 30, max = 60 } },
-  renderer = { group_empty = true },
+  -- Fit the longest visible name, capped so it never crowds out the editor
+  view = { width = { min = 20, max = "40%" } },
+  renderer = {
+    group_empty = compact_group,
+    -- Names cut off by the cap pop up in full under the cursor
+    full_name = true,
+  },
   update_focused_file = { enable = true },
   filters = {
     dotfiles = false,
@@ -291,6 +310,11 @@ end, { desc = "Format buffer" })
 map("n", "<leader>e", "<cmd>NvimTreeToggle<cr>", { desc = "Toggle file sidebar" })
 map("n", "<leader>>", "<cmd>NvimTreeResize +5<cr>", { desc = "Widen sidebar" })
 map("n", "<leader><", "<cmd>NvimTreeResize -5<cr>", { desc = "Narrow sidebar" })
+-- Manual resizes pin the width; this goes back to fitting the filenames
+map("n", "<leader>=", function()
+  tree.resize()
+  tree.reload() -- re-measure now instead of on the next tree change
+end, { desc = "Auto-fit sidebar" })
 map("n", "<S-h>", "<cmd>BufferLineCyclePrev<cr>", { desc = "Previous buffer" })
 map("n", "<S-l>", "<cmd>BufferLineCycleNext<cr>", { desc = "Next buffer" })
 map("n", "<leader>x", close_buffer, { desc = "Close buffer" })
