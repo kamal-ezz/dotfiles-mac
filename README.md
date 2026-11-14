@@ -2,6 +2,37 @@
 
 Personal terminal and editor configuration for macOS. 
 
+## Themes
+
+kitty, Ghostty, tmux, starship, Neovim, mpv and btop share one color theme,
+switched with `bin/theme`. Link it onto your PATH, then apply a theme once:
+
+```sh
+ln -s ~/dotfiles/bin/theme ~/.local/bin/theme
+theme catppuccin-mocha
+```
+
+- `theme` lists the themes and marks the active one.
+- `theme NAME` switches every app. Running kitty, Ghostty, tmux and Neovim
+  reload at once. Open mpv and btop windows change when they restart.
+- fastfetch uses only the terminal's 16 colors, so it follows any theme.
+
+Each folder in `themes/` is one theme with three files:
+
+| File | Contents |
+| --- | --- |
+| `kitty.conf` | Terminal colors. Ghostty's theme is generated from this file. |
+| `nvim.lua` | Adds the colorscheme plugin with `dotfiles_colorscheme_plugin()` and selects it. |
+| `palette` | Color roles (`bg`, `fg`, `accent`, ...) for tmux, starship, mpv and btop. |
+
+To add a theme, copy a folder, then replace its colors and colorscheme.
+`theme` stops with an error if a palette role is missing or is not `#rrggbb`.
+
+`theme` writes its output to `~/.config/dotfiles-theme`. The app configs
+include those files. Starship cannot include files, so `~/.config/starship.toml`
+is generated from `starship.toml` in this repo. After you edit
+`starship.toml`, run `theme NAME` again.
+
 ## mpv
 
 Each file in `mpv/` is symlinked to the same path under `~/.config/mpv`

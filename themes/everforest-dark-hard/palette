@@ -1,0 +1,16 @@
+# Everforest Dark Hard (https://github.com/sainnhe/everforest)
+# Color roles that bin/theme turns into tmux, starship, mpv and btop colors.
+bg=#272e33       # main background
+bg_dim=#1e2326   # behind everything else: idle video backdrop, curtains
+surface=#2e383c  # panels and bars
+overlay=#374145  # raised elements, hovered or selected rows
+border=#4f5b58   # inactive borders, unfilled meters
+fg=#d3c6aa       # main text
+muted=#859289    # secondary text: git branch, hostname, labels
+accent=#a7c080   # main accent: tmux session, mpv controls, prompt directory
+accent2=#d699b6  # second accent: prompt symbol, dirty git marker, upload
+info=#83c092     # ahead/behind, usage meters
+warn=#dbbc7f     # command duration
+alert=#e69875    # meters near their limit
+error=#e67e80
+success=#a7c080

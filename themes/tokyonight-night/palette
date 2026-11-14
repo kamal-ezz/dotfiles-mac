@@ -1,0 +1,16 @@
+# Tokyo Night, night variant (https://github.com/folke/tokyonight.nvim)
+# Color roles that bin/theme turns into tmux, starship, mpv and btop colors.
+bg=#1a1b26
+bg_dim=#16161e
+surface=#1f2335
+overlay=#292e42
+border=#3b4261
+fg=#c0caf5
+muted=#737aa2
+accent=#7aa2f7
+accent2=#bb9af7
+info=#7dcfff
+warn=#e0af68
+alert=#ff9e64
+error=#f7768e
+success=#9ece6a

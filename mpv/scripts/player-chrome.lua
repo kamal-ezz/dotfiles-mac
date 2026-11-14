@@ -3,6 +3,17 @@
 -- and visibility. title-bar.lua owns the top of the window.
 local mp = require("mp")
 local assdraw = require("mp.assdraw")
+local options = require("mp.options")
+
+-- RGB hex colors. These defaults are overridden by the active theme through
+-- script-opts (player-chrome-idle=...) in ~/.config/dotfiles-theme/mpv.conf.
+local colors = { idle = "0E0E0E", panel = "1B1B1B", edge = "222222" }
+options.read_options(colors, "player-chrome")
+
+-- ASS wants BGR.
+local function bgr(rgb)
+  return rgb:sub(5, 6) .. rgb:sub(3, 4) .. rgb:sub(1, 2)
+end
 
 local overlay = mp.create_osd_overlay("ass-events")
 overlay.z = -1
@@ -47,18 +58,18 @@ local function render()
   local function rectangle(y1, y2, color)
     ass:new_event()
     ass:pos(0, 0)
-    ass:append("{\\an7\\bord0\\shad0\\1c&H" .. color .. "&}")
+    ass:append("{\\an7\\bord0\\shad0\\1c&H" .. bgr(color) .. "&}")
     ass:draw_start()
     ass:rect_cw(0, y1, width, y2)
     ass:draw_stop()
   end
 
   if idle then
-    rectangle(0, height, "0E0E0E")
+    rectangle(0, height, colors.idle)
   end
   if bottom > 0 then
-    rectangle(height - bottom, height, "1B1B1B")
-    rectangle(height - bottom, height - bottom + 1, "222222")
+    rectangle(height - bottom, height, colors.panel)
+    rectangle(height - bottom, height - bottom + 1, colors.edge)
   end
 
   overlay.res_x = width

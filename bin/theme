@@ -1,0 +1,262 @@
+#!/usr/bin/env bash
+# Switch kitty, Ghostty, tmux, starship, Neovim, mpv and btop to one theme.
+#
+#   theme                list the themes, marking the active one
+#   theme NAME           switch to NAME (or re-apply it) and reload running apps
+#   theme --no-reload NAME   only write the files (used by setup scripts)
+#
+# A theme is a folder in themes/ with three files:
+#   kitty.conf  terminal colors for kitty; Ghostty's theme is generated from it
+#   nvim.lua    loads and selects the Neovim colorscheme
+#   palette     color roles (bg, fg, accent, ...) used for every other app
+# Generated files go to ~/.config/dotfiles-theme, which the app configs include.
+# fastfetch needs nothing here: it uses the terminal's 16 colors.
+set -euo pipefail
+
+script=$0
+while [[ -L $script ]]; do
+  target=$(readlink "$script")
+  if [[ $target == /* ]]; then script=$target; else script=$(dirname "$script")/$target; fi
+done
+repo=$(cd "$(dirname "$script")/.." && pwd -P)
+themes_dir=$repo/themes
+config=$HOME/.config
+state=$config/dotfiles-theme
+roles="bg bg_dim surface overlay border fg muted accent accent2 info warn alert error success"
+
+list_themes() {
+  local active dir name
+  active=$(cat "$state/name" 2>/dev/null || true)
+  for dir in "$themes_dir"/*/; do
+    name=$(basename "$dir")
+    if [[ $name == "$active" ]]; then printf '* %s\n' "$name"; else printf '  %s\n' "$name"; fi
+  done
+}
+
+# Read "role=#rrggbb  # comment" lines into shell variables, rejecting
+# anything else so a typo cannot produce a half-themed setup.
+load_palette() {
+  local file=$1 line key value role
+  for role in $roles; do printf -v "$role" '%s' ""; done
+  while IFS= read -r line || [[ -n $line ]]; do
+    line=${line%%#[!0-9a-fA-F]*}      # drop trailing comments, keep "#rrggbb"
+    line=${line%"${line##*[![:space:]]}"}
+    [[ -z $line || $line == \#* ]] && continue
+    key=${line%%=*}
+    value=${line#*=}
+    if [[ " $roles " != *" $key "* ]]; then
+      printf '%s: unknown role "%s"\n' "$file" "$key" >&2; exit 1
+    fi
+    if ! [[ $value =~ ^#[0-9a-fA-F]{6}$ ]]; then
+      printf '%s: %s must be #rrggbb, got "%s"\n' "$file" "$key" "$value" >&2; exit 1
+    fi
+    printf -v "$key" '%s' "$value"
+  done < "$file"
+  for role in $roles; do
+    if [[ -z ${!role} ]]; then printf '%s: missing role "%s"\n' "$file" "$role" >&2; exit 1; fi
+  done
+}
+
+# Write stdin to a file in one step, so apps never read a half-written file.
+write() {
+  local target=$1 tmp
+  mkdir -p "$(dirname "$target")"
+  tmp=$(mktemp "$target.XXXXXX")
+  chmod 644 "$tmp"
+  cat > "$tmp"
+  mv -f "$tmp" "$target"
+}
+
+hex() { printf '%s' "${1#\#}"; }
+
+generate() {
+  local src=$1 starship_out=$config/starship.toml
+  ln -sfn "$src/kitty.conf" "$state/kitty.conf"
+  ln -sfn "$src/nvim.lua" "$state/nvim.lua"
+
+  awk '
+    $1 == "background" { print "background = " $2 }
+    $1 == "foreground" { print "foreground = " $2 }
+    $1 == "cursor" && $2 ~ /^#/ { print "cursor-color = " $2 }
+    $1 == "cursor_text_color" && $2 ~ /^#/ { print "cursor-text = " $2 }
+    $1 == "selection_background" && $2 ~ /^#/ { print "selection-background = " $2 }
+    $1 == "selection_foreground" && $2 ~ /^#/ { print "selection-foreground = " $2 }
+    $1 ~ /^color([0-9]|1[0-5])$/ { print "palette = " substr($1, 6) "=" $2 }
+  ' "$src/kitty.conf" | write "$config/ghostty/themes/dotfiles"
+
+  write "$state/tmux.conf" <<EOF
+set -g status-left "#[fg=$bg,bg=$accent,bold] #S #[bg=default] "
+set -g status-right "#[fg=$accent]#{?client_prefix,PREFIX ,}#[fg=$muted]#h "
+set -g window-status-current-format "#[fg=$accent,bold] #I:#W "
+set -g pane-border-style "fg=$border"
+set -g pane-active-border-style "fg=$accent"
+set -g message-style "bg=default,fg=$accent"
+set -g message-command-style "bg=default,fg=$accent"
+set -g mode-style "bg=$accent,fg=$bg"
+EOF
+
+  write "$state/mpv.conf" <<EOF
+script-opts-append=uosc-color=foreground=$(hex "$accent"),foreground_text=$(hex "$bg"),background=$(hex "$surface"),background_text=$(hex "$fg"),window_border=$(hex "$overlay"),curtain=$(hex "$bg_dim"),success=$(hex "$success"),error=$(hex "$error"),match=$(hex "$accent"),heatmap=$(hex "$accent2")
+script-opts-append=player-chrome-idle=$(hex "$bg_dim")
+script-opts-append=player-chrome-panel=$(hex "$surface")
+script-opts-append=player-chrome-edge=$(hex "$overlay")
+script-opts-append=title-bar-panel=$(hex "$surface")
+script-opts-append=title-bar-edge=$(hex "$overlay")
+script-opts-append=title-bar-text=$(hex "$fg")
+script-opts-append=title-bar-muted=$(hex "$muted")
+script-opts-append=title-bar-glyph=$(hex "$fg")
+script-opts-append=title-bar-raised=$(hex "$overlay")
+script-opts-append=title-bar-hover=$(hex "$border")
+script-opts-append=title-bar-pressed=$(hex "$border")
+script-opts-append=title-bar-close_hover=$(hex "$error")
+script-opts-append=title-bar-close_pressed=$(hex "$error")
+script-opts-append=title-bar-on_close=$(hex "$bg")
+script-opts-append=audio-visualizer-bars=$(hex "$accent")
+script-opts-append=audio-visualizer-backdrop=$(hex "$bg_dim")
+EOF
+
+  write "$state/btop.theme" <<EOF
+# Generated by bin/theme from themes/$(basename "$src")/palette.
+# One flat accent per meter on dark tracks, warm near the top of the range.
+theme[main_bg]="$bg"
+theme[main_fg]="$fg"
+theme[title]="$fg"
+theme[hi_fg]="$info"
+theme[selected_bg]="$overlay"
+theme[selected_fg]="$fg"
+theme[inactive_fg]="$muted"
+theme[graph_text]="$muted"
+theme[meter_bg]="$border"
+theme[proc_misc]="$info"
+theme[cpu_box]="$border"
+theme[mem_box]="$border"
+theme[net_box]="$border"
+theme[proc_box]="$border"
+theme[div_line]="$border"
+theme[temp_start]="$info"
+theme[temp_mid]="$info"
+theme[temp_end]="$error"
+theme[cpu_start]="$info"
+theme[cpu_mid]="$info"
+theme[cpu_end]="$alert"
+theme[used_start]="$info"
+theme[used_mid]="$info"
+theme[used_end]="$info"
+theme[available_start]="$muted"
+theme[available_mid]="$muted"
+theme[available_end]="$muted"
+theme[cached_start]="$muted"
+theme[cached_mid]="$muted"
+theme[cached_end]="$muted"
+theme[free_start]="$muted"
+theme[free_mid]="$muted"
+theme[free_end]="$muted"
+theme[download_start]="$info"
+theme[download_mid]="$info"
+theme[download_end]="$info"
+theme[upload_start]="$accent2"
+theme[upload_mid]="$accent2"
+theme[upload_end]="$accent2"
+theme[process_start]="$info"
+theme[process_mid]="$info"
+theme[process_end]="$info"
+EOF
+  if [[ -d $config/btop ]]; then
+    mkdir -p "$config/btop/themes"
+    ln -sfn "$state/btop.theme" "$config/btop/themes/dotfiles.theme"
+  fi
+
+  # Starship has no include, so its config is generated: the repo's
+  # starship.toml uses role names, and the palette defines them here.
+  if [[ -e $starship_out && ! -L $starship_out ]] &&
+      ! head -1 "$starship_out" | grep -q '^# Generated by bin/theme'; then
+    mv "$starship_out" "$starship_out.before-theme"
+    printf 'Moved your existing %s to %s.before-theme\n' "$starship_out" "$starship_out"
+  fi
+  {
+    printf '# Generated by bin/theme: edit %s/starship.toml, then run `theme %s`.\n' \
+      "$repo" "$(basename "$src")"
+    printf 'palette = "theme"\n\n'
+    cat "$repo/starship.toml"
+    printf '\n[palettes.theme]\n'
+    for role in $roles; do printf '%s = "%s"\n' "$role" "${!role}"; done
+  } | write "$starship_out"
+}
+
+# Send a signal to every process whose executable is named $2.
+signal_app() {
+  local sig=$1 name=$2 pid comm
+  ps -eo pid=,comm= | while read -r pid comm; do
+    if [[ ${comm##*/} == "$name" ]]; then kill -s "$sig" "$pid" 2>/dev/null || true; fi
+  done
+}
+
+# Ghostty reloads on SIGUSR2 since 1.2; older versions would quit instead.
+ghostty_reloads_on_signal() {
+  local exe version major minor
+  exe=$(ps -eo comm= | awk '{ n = $0; sub(".*/", "", n) } n == "ghostty" { print; exit }')
+  [[ -n $exe ]] || return 1
+  [[ $exe == */* ]] || exe=$(command -v ghostty || true)
+  [[ -n $exe ]] || return 1
+  version=$("$exe" --version 2>/dev/null | awk 'NR == 1 { print $2 }')
+  major=${version%%.*}; minor=${version#*.}; minor=${minor%%.*}
+  [[ $major =~ ^[0-9]+$ && $minor =~ ^[0-9]+$ ]] || return 1
+  (( major > 1 || (major == 1 && minor >= 2) ))
+}
+
+reload_running_apps() {
+  local dir sock pid
+  signal_app USR1 kitty
+  if ghostty_reloads_on_signal; then signal_app USR2 ghostty; fi
+  if command -v tmux >/dev/null && tmux list-sessions >/dev/null 2>&1; then
+    tmux source-file "$HOME/.tmux.conf"
+  fi
+  # Each Neovim listens on a socket; ask each one to re-run its theme file.
+  # A separate Neovim installs the colorscheme plugin first, so running ones
+  # only load it; a busy instance gets 3 seconds before it is skipped.
+  if command -v nvim >/dev/null; then
+    nvim --headless +qa >/dev/null 2>&1 || true
+    for dir in "${XDG_RUNTIME_DIR:-}" "${TMPDIR:-/tmp}"; do
+      if [[ -n $dir && -d $dir ]]; then
+        find "$dir" -maxdepth 3 -type s -name 'nvim.*' 2>/dev/null || true
+      fi
+    done | sort -u | while read -r sock; do
+      nvim --server "$sock" --remote-expr 'v:lua.dotfiles_apply_theme()' >/dev/null 2>&1 &
+      pid=$!
+      ( sleep 3; kill "$pid" 2>/dev/null ) &
+      wait "$pid" 2>/dev/null || true
+    done
+  fi
+}
+
+reload=true
+if [[ ${1:-} == --no-reload ]]; then reload=false; shift; fi
+
+if [[ $# -eq 0 ]]; then
+  list_themes
+  exit 0
+fi
+if [[ $# -gt 1 || $1 == -* ]]; then
+  sed -n '2,8s/^# \{0,1\}//p' "$0" >&2
+  exit 1
+fi
+
+name=$1
+src=$themes_dir/$name
+if [[ ! -f $src/palette || ! -f $src/kitty.conf || ! -f $src/nvim.lua ]]; then
+  printf 'Unknown theme: %s\n' "$name" >&2
+  list_themes >&2
+  exit 1
+fi
+
+load_palette "$src/palette"
+mkdir -p "$state"
+generate "$src"
+printf '%s\n' "$name" | write "$state/name"
+
+if "$reload"; then
+  reload_running_apps
+  printf 'Theme: %s (open mpv and btop windows pick it up on restart)\n' "$name"
+else
+  printf 'Theme: %s\n' "$name"
+fi

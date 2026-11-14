@@ -50,7 +50,6 @@ vim.api.nvim_create_autocmd("PackChanged", {
 })
 
 vim.pack.add({
-  "https://github.com/sainnhe/everforest",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/neovim/nvim-lspconfig",
   "https://github.com/mason-org/mason.nvim",
@@ -63,11 +62,33 @@ vim.pack.add({
   "https://github.com/sindrets/diffview.nvim",
 })
 
--- Dark hard background (#272e33) matches the kitty, ghostty, starship and tmux palettes
-vim.o.background = "dark"
-vim.g.everforest_background = "hard"
-vim.g.everforest_better_performance = 1
-vim.cmd.colorscheme("everforest")
+-- Colorscheme from the active theme. `theme NAME` (bin/theme) links its
+-- nvim.lua here and calls dotfiles_apply_theme() in every running Neovim.
+local theme_file = vim.fn.expand("~/.config/dotfiles-theme/nvim.lua")
+-- Theme files add their colorscheme through this. After startup, a plugin
+-- that another Neovim (or bin/theme) installed is unknown to vim.pack here:
+-- vim.pack.add would clone it again, fail on the existing folder and delete
+-- it. So a running Neovim loads that installed copy with packadd instead.
+function _G.dotfiles_colorscheme_plugin(spec)
+  local src = type(spec) == "table" and spec.src or spec
+  local name = type(spec) == "table" and spec.name or (src:match("([^/]+)$"):gsub("%.git$", ""))
+  local dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site/pack/core/opt", name)
+  local active = false
+  for _, p in ipairs(vim.pack.get(nil, { info = false })) do
+    active = active or (p.active and p.spec.name == name)
+  end
+  if vim.v.vim_did_enter == 1 and not active and vim.uv.fs_stat(dir) then
+    vim.cmd.packadd(name)
+  else
+    vim.pack.add({ spec }, { confirm = false })
+  end
+end
+function _G.dotfiles_apply_theme()
+  if vim.uv.fs_stat(theme_file) then
+    dofile(theme_file)
+  end
+end
+dotfiles_apply_theme()
 
 -- Treesitter: install parsers, then highlight any filetype that has one
 require("nvim-treesitter").install({

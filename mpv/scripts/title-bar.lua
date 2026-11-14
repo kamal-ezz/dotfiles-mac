@@ -21,7 +21,9 @@ local FADE_SECONDS = 0.14
 local FLASH_SECONDS = 1
 local FRAME_SECONDS = 1 / 60
 
--- Window buttons stay neutral; orange is reserved for playback controls.
+-- RGB hex colors. Window buttons stay neutral; the accent is reserved for
+-- playback controls. The active theme overrides these through script-opts
+-- (title-bar-panel=...) in ~/.config/dotfiles-theme/mpv.conf.
 local COLORS = {
   panel = "1B1B1B",
   edge = "222222",
@@ -35,6 +37,7 @@ local COLORS = {
   close_pressed = "A32417",
   on_close = "FFFFFF",
 }
+require("mp.options").read_options(COLORS, "title-bar")
 local BUTTONS = { "minimize", "maximize", "close" }
 local BUTTON_SECTION = "title-bar-buttons"
 local DRAG_SECTION = "title-bar-drag"

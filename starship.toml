@@ -13,24 +13,23 @@ $python\
 $character"""
 
 scan_timeout = 100
-palette = "everforest_dark_hard"
 
-# Colors from the Everforest Dark Hard palette (see [palettes.everforest_dark_hard] below)
+# Colors are palette roles; bin/theme appends the active theme's values.
 [directory]
-style = "bold ef_green"
+style = "bold accent"
 
 [character]
-success_symbol = "[❯](ef_purple)"
-error_symbol = "[❯](ef_red)"
-vimcmd_symbol = "[❮](ef_aqua)"
+success_symbol = "[❯](accent2)"
+error_symbol = "[❯](error)"
+vimcmd_symbol = "[❮](info)"
 
 [git_branch]
 format = "[$branch]($style)"
-style = "ef_grey"
+style = "muted"
 
 [git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](ef_purple)( $ahead_behind$stashed) ]($style)"
-style = "ef_aqua"
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](accent2)( $ahead_behind$stashed) ]($style)"
+style = "info"
 conflicted = "​"
 untracked = "​"
 modified = "​"
@@ -41,23 +40,14 @@ stashed = "≡"
 
 [git_state]
 format = ' \([$state( $progress_current/$progress_total)]($style)\) '
-style = "ef_grey"
+style = "muted"
 
 [cmd_duration]
 format = "[$duration]($style) "
-style = "ef_yellow"
+style = "warn"
 
 [python]
 format = "[$virtualenv]($style) "
-style = "ef_grey"
+style = "muted"
 detect_extensions = []
 detect_files = []
-
-# https://github.com/sainnhe/everforest (dark, hard)
-[palettes.everforest_dark_hard]
-ef_green = "#a7c080"
-ef_aqua = "#83c092"
-ef_purple = "#d699b6"
-ef_red = "#e67e80"
-ef_yellow = "#dbbc7f"
-ef_grey = "#859289"

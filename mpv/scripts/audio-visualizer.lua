@@ -2,6 +2,16 @@
 -- Only the visualization branch is downmixed; playback keeps the original audio.
 local mp = require("mp")
 
+-- RGB hex colors, overridden by the active theme through script-opts
+-- (audio-visualizer-bars=...) in ~/.config/dotfiles-theme/mpv.conf.
+local colors = { bars = "d37918", backdrop = "0e0e0e" }
+require("mp.options").read_options(colors, "audio-visualizer")
+local backdrop = {
+  tonumber(colors.backdrop:sub(1, 2), 16),
+  tonumber(colors.backdrop:sub(3, 4), 16),
+  tonumber(colors.backdrop:sub(5, 6), 16),
+}
+
 local enabled = true
 local ready = false
 local owned_graph
@@ -53,10 +63,11 @@ local function update()
     "[aid%d]asplit[ao][spectrum];" ..
     "[spectrum]aformat=channel_layouts=mono," ..
     "showfreqs=s=960x240:rate=30:mode=bar:ascale=sqrt:fscale=log:" ..
-    "win_size=2048:averaging=4:colors=0xd37918," ..
-    "format=rgb24,lutrgb=r=val+14:g=val+14:b=val+14," ..
-    "pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=0x0e0e0e,format=yuv420p[vo]",
-    audio.id
+    "win_size=2048:averaging=4:colors=0x%s," ..
+    -- showfreqs draws on black: paint only the black channels with the backdrop
+    "format=rgb24,lutrgb=r='if(val,val,%d)':g='if(val,val,%d)':b='if(val,val,%d)'," ..
+    "pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=0x%s,format=yuv420p[vo]",
+    audio.id, colors.bars, backdrop[1], backdrop[2], backdrop[3], colors.backdrop
   )
   if graph == current_graph then
     return

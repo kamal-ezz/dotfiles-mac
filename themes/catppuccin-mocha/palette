@@ -1,0 +1,16 @@
+# Catppuccin Mocha (https://catppuccin.com/palette)
+# Color roles that bin/theme turns into tmux, starship, mpv and btop colors.
+bg=#1e1e2e
+bg_dim=#11111b
+surface=#181825
+overlay=#313244
+border=#45475a
+fg=#cdd6f4
+muted=#7f849c
+accent=#89b4fa
+accent2=#cba6f7
+info=#94e2d5
+warn=#f9e2af
+alert=#fab387
+error=#f38ba8
+success=#a6e3a1
