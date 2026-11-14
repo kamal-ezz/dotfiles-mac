@@ -13,23 +13,24 @@ $python\
 $character"""
 
 scan_timeout = 100
+palette = "tokyo_night"
 
-# Colors from the Aquarium Dark palette
+# Colors from the Tokyo Night palette (see [palettes.tokyo_night] below)
 [directory]
-style = "bold #cddbf9"
+style = "bold tn_blue"
 
 [character]
-success_symbol = "[❯](#f6bbe7)"
-error_symbol = "[❯](#d95e59)"
-vimcmd_symbol = "[❮](#caf6bb)"
+success_symbol = "[❯](tn_magenta)"
+error_symbol = "[❯](tn_red)"
+vimcmd_symbol = "[❮](tn_green)"
 
 [git_branch]
 format = "[$branch]($style)"
-style = "#8791a5"
+style = "tn_comment"
 
 [git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](#f6bbe7) ($ahead_behind$stashed)]($style)"
-style = "#b8dceb"
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](tn_magenta) ($ahead_behind$stashed)]($style)"
+style = "tn_cyan"
 conflicted = "​"
 untracked = "​"
 modified = "​"
@@ -40,14 +41,24 @@ stashed = "≡"
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "#8791a5"
+style = "tn_comment"
 
 [cmd_duration]
 format = "[$duration]($style) "
-style = "#e6dfb8"
+style = "tn_yellow"
 
 [python]
 format = "[$virtualenv]($style) "
-style = "#8791a5"
+style = "tn_comment"
 detect_extensions = []
 detect_files = []
+
+# https://github.com/folke/tokyonight.nvim (night variant)
+[palettes.tokyo_night]
+tn_blue = "#7aa2f7"
+tn_cyan = "#7dcfff"
+tn_green = "#9ece6a"
+tn_magenta = "#bb9af7"
+tn_red = "#f7768e"
+tn_yellow = "#e0af68"
+tn_comment = "#737aa2"
