@@ -59,6 +59,8 @@ vim.pack.add({
   "https://github.com/nvim-tree/nvim-tree.lua",
   "https://github.com/nvim-tree/nvim-web-devicons",
   "https://github.com/akinsho/bufferline.nvim",
+  "https://github.com/lewis6991/gitsigns.nvim",
+  "https://github.com/sindrets/diffview.nvim",
 })
 
 -- Night variant matches the kitty and starship palettes
@@ -298,6 +300,93 @@ require("bufferline").setup({
   },
 })
 
+-- Git ----------------------------------------------------------------------
+
+-- Gutter markers for changed lines, plus hunk actions on the line under the
+-- cursor (or the selected lines, for stage/reset)
+local gitsigns = require("gitsigns")
+gitsigns.setup({
+  current_line_blame_opts = { delay = 300 },
+  on_attach = function(buf)
+    local function bmap(mode, lhs, rhs, desc)
+      vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })
+    end
+    -- In a diff window ]c/[c keep their built-in meaning
+    bmap("n", "]h", function()
+      if vim.wo.diff then vim.cmd.normal({ "]c", bang = true }) else gitsigns.nav_hunk("next") end
+    end, "Next change")
+    bmap("n", "[h", function()
+      if vim.wo.diff then vim.cmd.normal({ "[c", bang = true }) else gitsigns.nav_hunk("prev") end
+    end, "Previous change")
+    bmap("n", "<leader>gp", gitsigns.preview_hunk_inline, "Preview change")
+    bmap("n", "<leader>gs", gitsigns.stage_hunk, "Stage/unstage change")
+    bmap("n", "<leader>gr", gitsigns.reset_hunk, "Discard change")
+    bmap("v", "<leader>gs", function()
+      gitsigns.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+    end, "Stage/unstage selected lines")
+    bmap("v", "<leader>gr", function()
+      gitsigns.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
+    end, "Discard selected lines")
+    bmap("n", "<leader>gS", gitsigns.stage_buffer, "Stage file")
+    bmap("n", "<leader>gR", gitsigns.reset_buffer, "Discard file changes")
+    bmap("n", "<leader>gb", function() gitsigns.blame_line({ full = true }) end, "Blame line")
+    bmap("n", "<leader>gB", gitsigns.toggle_current_line_blame, "Toggle inline blame")
+  end,
+})
+
+-- Side-by-side diffs, file/branch history and 3-way merge conflicts.
+-- Each key opens its view, or closes whichever diffview is open.
+require("diffview").setup({ enhanced_diff_hl = true })
+local function diffview(cmd)
+  return function()
+    if require("diffview.lib").get_current_view() then
+      vim.cmd.DiffviewClose()
+    else
+      vim.cmd(cmd)
+    end
+  end
+end
+
+-- lazygit in a floating terminal. lazygit.yml uses the nvim-remote preset, so
+-- editing a file from lazygit opens it here rather than in a nested Neovim.
+local function lazygit()
+  local prev = vim.api.nvim_get_current_win()
+  local width = math.floor(vim.o.columns * 0.9)
+  local height = math.floor(vim.o.lines * 0.85)
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    style = "minimal",
+    border = "rounded",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+  })
+  vim.fn.jobstart({ "lazygit" }, {
+    term = true,
+    on_exit = function()
+      vim.schedule(function()
+        -- A file lazygit opened may have landed in the float; move it back.
+        local shown = vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win)
+        if vim.api.nvim_win_is_valid(win) then
+          vim.api.nvim_win_close(win, true)
+        end
+        if shown and shown ~= buf and vim.api.nvim_win_is_valid(prev) then
+          vim.api.nvim_win_set_buf(prev, shown)
+          vim.api.nvim_set_current_win(prev)
+        end
+        if vim.api.nvim_buf_is_valid(buf) then
+          vim.api.nvim_buf_delete(buf, { force = true })
+        end
+        vim.cmd.checktime() -- pick up checkouts, stashes and rebases
+        tree.reload()
+      end)
+    end,
+  })
+  vim.cmd.startinsert()
+end
+
 -- Keymaps ------------------------------------------------------------------
 
 local map = vim.keymap.set
@@ -326,5 +415,12 @@ map("n", "<leader>h", fzf.helptags, { desc = "Help" })
 map("n", "<leader>d", fzf.diagnostics_document, { desc = "Diagnostics" })
 map("n", "<leader>s", fzf.lsp_document_symbols, { desc = "Symbols" })
 map("n", "<leader><leader>", fzf.resume, { desc = "Resume last picker" })
+
+map("n", "<leader>gg", lazygit, { desc = "lazygit" })
+map("n", "<leader>gd", diffview("DiffviewOpen"), { desc = "Diff all changes" })
+map("n", "<leader>gh", diffview("DiffviewFileHistory %"), { desc = "File history" })
+map("n", "<leader>gH", diffview("DiffviewFileHistory"), { desc = "Branch history" })
+map("n", "<leader>gf", fzf.git_status, { desc = "Changed files" })
+map("n", "<leader>gl", fzf.git_branches, { desc = "Branches" })
 
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlighting" })

@@ -4,4 +4,5 @@ git:
       command: delta --dark --paging=never --side-by-side --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
     - type: rawGit
 os:
-  editPreset: nvim
+  # Inside Neovim (<leader>gg) files open in that Neovim; elsewhere in plain nvim
+  editPreset: nvim-remote
