@@ -1,0 +1,16 @@
+# Mellow (https://github.com/mellow-theme/mellow.nvim/blob/main/lua/mellow/colors.lua)
+# Color roles that bin/theme turns into tmux, starship, mpv and btop colors.
+bg=#161617
+bg_dim=#131314
+surface=#1b1b1d
+overlay=#2a2a2d
+border=#3e3e43
+fg=#c9c7cd
+muted=#757581
+accent=#aca1cf
+accent2=#e29eca
+info=#90b99f
+warn=#e6b99d
+alert=#f0c5a9
+error=#f5a191
+success=#90b99f

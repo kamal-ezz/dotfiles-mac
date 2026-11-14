@@ -2,6 +2,13 @@
 
 Personal terminal and editor configuration for macOS. 
 
+## Neovim shortcuts
+
+In normal mode, press Space and pause for 250 ms to show the shortcut menu.
+Press the next key to run a command or open a group (Space `g` for Git).
+Space `?` opens the menu immediately; Esc dismisses it. The menu uses the
+descriptions on the existing keymaps and follows the active theme.
+
 ## Themes
 
 kitty, Ghostty, tmux, starship, Neovim, mpv and btop share one color theme,

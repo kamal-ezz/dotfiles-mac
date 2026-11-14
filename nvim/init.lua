@@ -60,6 +60,7 @@ vim.pack.add({
   "https://github.com/akinsho/bufferline.nvim",
   "https://github.com/lewis6991/gitsigns.nvim",
   "https://github.com/sindrets/diffview.nvim",
+  "https://github.com/folke/which-key.nvim",
 })
 
 -- Colorscheme from the active theme. `theme NAME` (bin/theme) links its
@@ -452,3 +453,17 @@ map("n", "<leader>gf", fzf.git_status, { desc = "Changed files" })
 map("n", "<leader>gl", fzf.git_branches, { desc = "Branches" })
 
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlighting" })
+
+-- Show available shortcuts after a prefix; descriptions come from the maps above.
+local which_key = require("which-key")
+which_key.setup({
+  delay = 250,
+  win = { border = "rounded" },
+  spec = {
+    { "<leader>g", group = "Git", mode = { "n", "v" } },
+    { "<leader>gg", icon = { icon = "", color = "orange" } },
+  },
+})
+map("n", "<leader>?", function()
+  which_key.show({ keys = vim.g.mapleader, mode = "n" })
+end, { desc = "Show shortcuts" })
