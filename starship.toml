@@ -29,7 +29,7 @@ format = "[$branch]($style)"
 style = "tn_comment"
 
 [git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](tn_magenta) ($ahead_behind$stashed)]($style)"
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](tn_magenta)( $ahead_behind$stashed) ]($style)"
 style = "tn_cyan"
 conflicted = "​"
 untracked = "​"
@@ -40,7 +40,7 @@ deleted = "​"
 stashed = "≡"
 
 [git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
+format = ' \([$state( $progress_current/$progress_total)]($style)\) '
 style = "tn_comment"
 
 [cmd_duration]

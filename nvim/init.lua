@@ -201,6 +201,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 -- Fuzzy finder
 local fzf = require("fzf-lua")
 fzf.setup({
+  -- Keep the preview inside fzf so clicks cannot focus a separate Neovim buffer.
+  "fzf-native",
+  -- Close the terminal on accept/cancel instead of keeping a hidden picker alive.
+  defaults = { no_hide = true },
+  keymap = { builtin = { ["<Esc>"] = "abort" } },
   files = { hidden = true },
   -- Search dotfiles too, but never inside .git (the default rg_opts plus a glob)
   grep = {
