@@ -50,7 +50,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
 })
 
 vim.pack.add({
-  { src = "https://github.com/catppuccin/nvim", name = "catppuccin" },
+  "https://github.com/folke/tokyonight.nvim",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/neovim/nvim-lspconfig",
   "https://github.com/mason-org/mason.nvim",
@@ -61,7 +61,9 @@ vim.pack.add({
   "https://github.com/akinsho/bufferline.nvim",
 })
 
-vim.cmd.colorscheme("catppuccin")
+-- Night variant matches the kitty and starship palettes
+require("tokyonight").setup({ style = "night" })
+vim.cmd.colorscheme("tokyonight-night")
 
 -- Treesitter: install parsers, then highlight any filetype that has one
 require("nvim-treesitter").install({
@@ -269,7 +271,6 @@ end
 
 -- Tab bar of open buffers, starting to the right of the sidebar
 require("bufferline").setup({
-  highlights = require("catppuccin.special.bufferline").get_theme(),
   options = {
     close_command = close_buffer,
     right_mouse_command = close_buffer,
