@@ -65,7 +65,7 @@
                         ]
                     },
                     {
-                        "description": "Launch Kitty and Helium",
+                        "description": "Launch Kitty",
                         "manipulators": [
                             {
                                 "from": {
@@ -77,20 +77,6 @@
                                 "to": [
                                     {
                                         "shell_command": "/usr/bin/open -a 'kitty'"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "h",
-                                    "modifiers": {
-                                        "mandatory": ["option"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "/usr/bin/open -a 'Helium'"
                                     }
                                 ],
                                 "type": "basic"
