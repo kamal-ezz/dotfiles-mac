@@ -1,3 +1,9 @@
+# Third-party taps: trust only what is installed from them. `brew bundle
+# cleanup --force` resets Homebrew's trust store to these entries.
+tap "domt4/autoupdate", trusted: true
+brew "hashicorp/tap/terraform", trusted: true
+brew "supabase/tap/supabase", trusted: true
+
 brew "bat"
 brew "eza"
 brew "fd"
