@@ -8,10 +8,18 @@ chrome = [
 play = [
   { run = "mpv -- %s", desc = "Play with mpv", for = "unix", orphan = true },
 ]
+image = [
+  { run = "open -- %s", desc = "Open in default image viewer", for = "macos", orphan = true },
+]
+pdf = [
+  { run = "open -- %s", desc = "Open in default PDF reader", for = "macos", orphan = true },
+]
 
 [open]
 prepend_rules = [
   { url = "*.{html,htm}", use = ["chrome", "edit"] },
   { mime = "text/html", use = ["chrome", "edit"] },
   { mime = "{audio,video}/*", use = ["play", "reveal"] },
+  { mime = "image/*", use = ["image", "reveal"] },
+  { mime = "application/pdf", use = ["pdf", "reveal"] },
 ]

@@ -24,22 +24,22 @@ error_symbol = "[❯](error)"
 vimcmd_symbol = "[❮](info)"
 
 [git_branch]
-format = "[$branch]($style)"
+format = "[$branch]($style) "
 style = "muted"
 
 [git_status]
 format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](accent2)( $ahead_behind$stashed) ]($style)"
 style = "info"
-conflicted = "​"
-untracked = "​"
-modified = "​"
-staged = "​"
-renamed = "​"
-deleted = "​"
+conflicted = "\u200b"
+untracked = "\u200b"
+modified = "\u200b"
+staged = "\u200b"
+renamed = "\u200b"
+deleted = "\u200b"
 stashed = "≡"
 
 [git_state]
-format = ' \([$state( $progress_current/$progress_total)]($style)\) '
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
 style = "muted"
 
 [cmd_duration]

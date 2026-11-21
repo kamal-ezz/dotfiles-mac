@@ -1,12 +1,20 @@
 -- Options ------------------------------------------------------------------
 
 vim.g.mapleader = " "
--- nvim-tree replaces netrw
+-- nvim-tree replaces netrw; skip unused remote providers for a clean :checkhealth
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
 
 vim.o.number = true
 vim.o.signcolumn = "yes"
+vim.o.scrolloff = 6
+vim.o.splitright = true
+vim.o.splitbelow = true
+vim.o.confirm = true
 vim.o.tabstop = 2
 vim.o.shiftwidth = 2
 vim.o.softtabstop = 2
@@ -65,7 +73,10 @@ vim.pack.add({
 
 -- Colorscheme from the active theme. `theme NAME` (bin/theme) links its
 -- nvim.lua here and calls dotfiles_apply_theme() in every running Neovim.
-local config_home = vim.fn.expand("~/.config")
+local config_home = vim.env.XDG_CONFIG_HOME
+if not config_home or config_home == "" then
+  config_home = vim.fn.expand("~/.config")
+end
 local theme_file = config_home .. "/dotfiles-theme/nvim.lua"
 -- Theme files add their colorscheme through this. After startup, a plugin
 -- that another Neovim (or bin/theme) installed is unknown to vim.pack here:
@@ -350,7 +361,7 @@ local function close_buffer(buf)
       vim.cmd(has_other and "bprevious" or "enew")
     end)
   end
-  vim.cmd.bdelete({ args = { tostring(buf) }, bang = vim.bo[buf].buftype == "terminal" })
+  vim.api.nvim_buf_delete(buf, { force = vim.bo[buf].buftype == "terminal" })
 end
 
 -- Tab bar of open buffers, starting to the right of the sidebar
@@ -398,10 +409,14 @@ gitsigns.setup({
 })
 
 -- Side-by-side diffs, file/branch history and 3-way merge conflicts.
--- Configure both direct commands and mappings without loading the view module.
-require("diffview.config").setup({ enhanced_diff_hl = true })
+-- Configured lazily on first invocation; each key toggles the view.
+local diffview_ready = false
 local function diffview(cmd)
   return function()
+    if not diffview_ready then
+      diffview_ready = true
+      require("diffview").setup({ enhanced_diff_hl = true })
+    end
     if require("diffview.lib").get_current_view() then
       vim.cmd.DiffviewClose()
     else

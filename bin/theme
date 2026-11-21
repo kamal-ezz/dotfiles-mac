@@ -21,7 +21,7 @@ while [[ -L $script ]]; do
 done
 repo=$(cd "$(dirname "$script")/.." && pwd -P)
 themes_dir=$repo/themes
-config=${DOTFILES_CONFIG_DIR:-$HOME/.config}
+config=${DOTFILES_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
 state=$config/dotfiles-theme
 roles="bg bg_dim surface overlay border fg muted accent accent2 info warn alert error success"
 
@@ -164,6 +164,7 @@ EOF
   write "$state/tmux.conf" <<EOF
 set -g status-left "#[fg=$bg,bg=$accent,bold] #S #[bg=default] "
 set -g status-right "#[fg=$accent]#{?client_prefix,PREFIX ,}#[fg=$muted]#h "
+set -g window-status-format "#[fg=$muted] #I:#W "
 set -g window-status-current-format "#[fg=$accent,bold] #I:#W "
 set -g pane-border-style "fg=$border"
 set -g pane-active-border-style "fg=$accent"
@@ -375,6 +376,11 @@ if [[ $# -gt 1 || $1 == -* ]]; then
 fi
 
 name=$1
+if [[ ! $name =~ ^[a-zA-Z0-9_-]+$ ]]; then
+  printf 'Unknown theme: %s\n' "$name" >&2
+  list_themes >&2
+  exit 1
+fi
 src=$themes_dir/$name
 if [[ ! -f $src/palette || ! -f $src/kitty.conf || ! -f $src/nvim.lua ]]; then
   printf 'Unknown theme: %s\n' "$name" >&2
