@@ -1,7 +1,7 @@
 git:
   diffRenderers:
     - name: delta
-      command: delta --dark --paging=never --side-by-side --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+      command: delta --config "$HOME/.config/dotfiles-theme/delta.gitconfig" --dark --paging=never --side-by-side --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
     - type: rawGit
 os:
   # Inside Neovim (<leader>gg) files open in that Neovim; elsewhere in plain nvim

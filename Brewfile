@@ -5,6 +5,7 @@ brew "hashicorp/tap/terraform", trusted: true
 brew "supabase/tap/supabase", trusted: true
 
 brew "bat"
+brew "btop"
 brew "eza"
 brew "fd"
 brew "fastfetch"

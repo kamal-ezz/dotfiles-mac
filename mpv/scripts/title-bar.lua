@@ -41,6 +41,7 @@ require("mp.options").read_options(COLORS, "title-bar")
 local BUTTONS = { "minimize", "maximize", "close" }
 local BUTTON_SECTION = "title-bar-buttons"
 local DRAG_SECTION = "title-bar-drag"
+local RELEASE_SECTION = "title-bar-release"
 
 -- Default z keeps the bar above player-chrome's backdrop and below uosc's menus.
 local overlay = mp.create_osd_overlay("ass-events")
@@ -81,6 +82,10 @@ local function text_width(text, font_size)
   measure.data = string.format("{\\an7\\pos(0,0)\\q2\\bord0\\shad0\\fs%d}%s", font_size, escape(text))
   local bounds = measure:update()
   local width = bounds and bounds.x1 or 0
+  if width <= 0 and text ~= "" then
+    -- VO/libass may not be initialized yet; do not poison the cache with 0.
+    return 0
+  end
   if width >= window.width then
     -- Measurements are clipped to the window, so the real width is unknown
     -- and must not be reused once the window grows.
@@ -187,8 +192,10 @@ local function target_visibility()
     return 0
   end
   local distance = math.max(0, pointer.y - layout.height)
-  local range = PROXIMITY_OUT - PROXIMITY_IN
-  return 1 - math.min(math.max(distance - PROXIMITY_IN, 0), range) / range
+  local prox_in = px(PROXIMITY_IN)
+  local prox_out = px(PROXIMITY_OUT)
+  local range = math.max(1, prox_out - prox_in)
+  return 1 - math.min(math.max(distance - prox_in, 0), range) / range
 end
 
 local function style(color, opacity)
@@ -468,6 +475,9 @@ local actions = {
 
 local function press()
   pressed = hovered
+  if pressed then
+    mp.enable_key_bindings(RELEASE_SECTION)
+  end
   render()
 end
 
@@ -475,6 +485,7 @@ end
 local function release()
   local action = pressed and pressed == hovered and actions[pressed]
   pressed = nil
+  mp.disable_key_bindings(RELEASE_SECTION)
   render()
   if action then
     action()
@@ -485,6 +496,9 @@ mp.set_key_bindings({
   { "mbtn_left", release, press },
   { "mbtn_left_dbl", "ignore" },
 }, BUTTON_SECTION, "force")
+mp.set_key_bindings({
+  { "mbtn_left", release },
+}, RELEASE_SECTION, "force")
 mp.set_key_bindings({
   { "mbtn_left_dbl", toggle_maximized },
 }, DRAG_SECTION, "force")
@@ -503,9 +517,14 @@ mp.observe_property("mouse-pos", "native", function(_, position)
     return
   end
   local moved = position.x ~= pointer.x or position.y ~= pointer.y
+  local inside_changed = position.hover ~= pointer.inside
   pointer.x = position.x
   pointer.y = position.y
   pointer.inside = position.hover
+  if not pointer.inside and pressed then
+    pressed = nil
+    mp.disable_key_bindings(RELEASE_SECTION)
+  end
   if moved then
     pointer.idle = false
     idle_timer:kill()
@@ -514,6 +533,13 @@ mp.observe_property("mouse-pos", "native", function(_, position)
       idle_timer.timeout = autohide / 1000
       idle_timer:resume()
     end
+  end
+  if not moved and not inside_changed then
+    return
+  end
+  -- Skip full layout/ASS rebuild when the bar is hidden and stays hidden.
+  if bar.visibility == 0 and not bar.pinned and not bar.flashing and target_visibility() == 0 then
+    return
   end
   refresh()
 end)

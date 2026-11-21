@@ -1,6 +1,19 @@
 # Configs
 
-Personal terminal and editor configuration for macOS. 
+Personal terminal and editor configuration for macOS.
+
+## Install
+
+Install the tools with `brew bundle`, then preview and link the configs.
+
+```sh
+bash setup.sh --dry-run
+bash setup.sh
+```
+
+The installer moves conflicting files into adjacent
+`*.dotfiles-backup.*/original` paths, adds a theme hook to `~/.zshrc`, and
+installs missing mpv plugins. Open a new Zsh session to load the hook.
 
 ## Neovim shortcuts
 
@@ -11,26 +24,29 @@ descriptions on the existing keymaps and follows the active theme.
 
 ## Themes
 
-kitty, Ghostty, tmux, starship, Neovim, mpv and btop share one color theme,
-switched with `bin/theme`. Link it onto your PATH, then apply a theme once:
+Kitty, Ghostty, tmux, Starship, Neovim, mpv, btop, Lazygit, Delta, fzf and bat
+share a theme. The installer links `theme` into `~/.local/bin`. Run it from
+there or directly from this repo.
 
 ```sh
-ln -s ~/dotfiles/bin/theme ~/.local/bin/theme
-theme catppuccin-mocha
+bin/theme catppuccin-mocha
 ```
 
 - `theme` lists the themes and marks the active one.
 - `theme NAME` switches every app. Running kitty, Ghostty, tmux and Neovim
-  reload at once. Open mpv and btop windows change when they restart.
+  reload at once. mpv, btop, Lazygit, Delta, fzf and bat pick up the theme the
+  next time they start.
+- `theme rose-pine` selects Rosé Pine.
 - fastfetch uses only the terminal's 16 colors, so it follows any theme.
 
-Each folder in `themes/` is one theme with three files:
+Each folder in `themes/` defines one theme.
 
 | File | Contents |
 | --- | --- |
 | `kitty.conf` | Terminal colors. Ghostty's theme is generated from this file. |
 | `nvim.lua` | Adds the colorscheme plugin with `dotfiles_colorscheme_plugin()` and selects it. |
 | `palette` | Color roles (`bg`, `fg`, `accent`, ...) for tmux, starship, mpv and btop. |
+| `syntax-theme` | Optional theme name for bat and Delta. The default is `ansi`, which uses terminal colors. |
 
 To add a theme, copy a folder, then replace its colors and colorscheme.
 `theme` stops with an error if a palette role is missing or is not `#rrggbb`.
@@ -45,15 +61,9 @@ is generated from `starship.toml` in this repo. After you edit
 Each file in `mpv/` is symlinked to the same path under `~/.config/mpv`
 (`mpv/tests/` stays in the repo; run it with `lua mpv/tests/playlist.lua`).
 
-`mpv.conf` turns off the built-in controls in favour of uosc, so install uosc
-and thumbfast (seek-bar previews) alongside the symlinks:
-
-```sh
-curl -fsSL -o /tmp/uosc.zip https://github.com/tomasklaen/uosc/releases/latest/download/uosc.zip
-unzip -oq /tmp/uosc.zip -d ~/.config/mpv && rm /tmp/uosc.zip
-curl -fsSL -o ~/.config/mpv/scripts/thumbfast.lua \
-  https://raw.githubusercontent.com/po5/thumbfast/master/thumbfast.lua
-```
+`mpv.conf` uses uosc for on-screen controls and thumbfast for seek-bar
+previews. `setup.sh` installs missing plugins from pinned, SHA-256-verified
+downloads.
 
 uosc's clipboard helper (`ziggy-darwin`) is an Intel build, so pasting paths
 into the playlist needs Rosetta on Apple Silicon.

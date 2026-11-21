@@ -40,7 +40,7 @@ vim.diagnostic.config({
 vim.api.nvim_create_autocmd("PackChanged", {
   callback = function(ev)
     local name, kind = ev.data.spec.name, ev.data.kind
-    if name == "nvim-treesitter" and kind == "update" then
+    if name == "nvim-treesitter" and (kind == "install" or kind == "update") then
       if not ev.data.active then
         vim.cmd.packadd("nvim-treesitter")
       end
@@ -65,7 +65,8 @@ vim.pack.add({
 
 -- Colorscheme from the active theme. `theme NAME` (bin/theme) links its
 -- nvim.lua here and calls dotfiles_apply_theme() in every running Neovim.
-local theme_file = vim.fn.expand("~/.config/dotfiles-theme/nvim.lua")
+local config_home = vim.fn.expand("~/.config")
+local theme_file = config_home .. "/dotfiles-theme/nvim.lua"
 -- Theme files add their colorscheme through this. After startup, a plugin
 -- that another Neovim (or bin/theme) installed is unknown to vim.pack here:
 -- vim.pack.add would clone it again, fail on the existing folder and delete
@@ -91,11 +92,22 @@ function _G.dotfiles_apply_theme()
 end
 dotfiles_apply_theme()
 
--- Treesitter: install parsers, then highlight any filetype that has one
-require("nvim-treesitter").install({
-  "bash", "css", "go", "gomod", "gosum", "html", "java", "javascript",
-  "json", "kotlin", "lua", "markdown", "python", "rust", "tsx", "typescript",
-})
+-- Treesitter: install missing parsers, then highlight any filetype that has one
+do
+  local ts = require("nvim-treesitter")
+  local wanted = {
+    "bash", "css", "go", "gomod", "gosum", "html", "java", "javascript",
+    "json", "kotlin", "lua", "markdown", "python", "rust", "tsx", "typescript",
+  }
+  local installed = {}
+  for _, lang in ipairs(ts.get_installed and ts.get_installed() or {}) do
+    installed[lang] = true
+  end
+  local missing = vim.tbl_filter(function(lang) return not installed[lang] end, wanted)
+  if #missing > 0 then
+    ts.install(missing)
+  end
+end
 vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     pcall(vim.treesitter.start)
@@ -180,11 +192,30 @@ vim.lsp.config("kotlin_lsp", {
   root_dir = jvm_root,
   workspace_required = true,
 })
--- Use JetBrains' server even if the older community server is installed.
-vim.lsp.enable("kotlin_language_server", false)
-require("mason-lspconfig").setup({
-  ensure_installed = servers,
-  automatic_enable = { exclude = { "kotlin_language_server" } },
+-- Point rust_analyzer at the std sources so jumping into std reuses the project's
+-- server; lspconfig's own lookup needs nightly cargo and fails on stable.
+-- Asked on the first Rust buffer instead of at every startup (rustc takes
+-- ~40 ms). Defined before mason-lspconfig enables the servers, so this
+-- FileType handler runs before the one that starts rust_analyzer.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "rust",
+  once = true,
+  callback = function()
+    if vim.fn.executable("rustc") == 0 then
+      return
+    end
+    local sysroot = vim.trim(vim.fn.system({ "rustc", "--print", "sysroot" }))
+    local sysroot_src = sysroot .. "/lib/rustlib/src/rust/library"
+    if vim.v.shell_error == 0 and vim.uv.fs_stat(sysroot_src) then
+      vim.lsp.config("rust_analyzer", {
+        settings = {
+          ["rust-analyzer"] = {
+            cargo = { sysrootSrc = sysroot_src },
+          },
+        },
+      })
+    end
+  end,
 })
 
 -- Make lua_ls aware of the Neovim API when editing this config
@@ -197,20 +228,12 @@ vim.lsp.config("lua_ls", {
   },
 })
 
--- Point rust_analyzer at the std sources so jumping into std reuses the project's
--- server; lspconfig's own lookup needs nightly cargo and fails on stable
-if vim.fn.executable("rustc") == 1 then
-  local sysroot = vim.trim(vim.fn.system({ "rustc", "--print", "sysroot" }))
-  if vim.v.shell_error == 0 then
-    vim.lsp.config("rust_analyzer", {
-      settings = {
-        ["rust-analyzer"] = {
-          cargo = { sysrootSrc = sysroot .. "/lib/rustlib/src/rust/library" },
-        },
-      },
-    })
-  end
-end
+-- Use JetBrains' server even if the older community server is installed.
+vim.lsp.enable("kotlin_language_server", false)
+require("mason-lspconfig").setup({
+  ensure_installed = servers,
+  automatic_enable = { exclude = { "kotlin_language_server" } },
+})
 
 -- Built-in completion: popup appears as you type; <C-n>/<C-p> move, <C-y> accepts
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -222,22 +245,33 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
--- Fuzzy finder
-local fzf = require("fzf-lua")
-fzf.setup({
-  -- Keep the preview inside fzf so clicks cannot focus a separate Neovim buffer.
-  "fzf-native",
-  -- Close the terminal on accept/cancel instead of keeping a hidden picker alive.
-  defaults = { no_hide = true },
-  keymap = { builtin = { ["<Esc>"] = "abort" } },
-  files = { hidden = true },
-  -- Search dotfiles too, but never inside .git (the default rg_opts plus a glob)
-  grep = {
-    hidden = true,
-    rg_opts = '--column --line-number --no-heading --color=always --smart-case '
-      .. '--max-columns=4096 -g "!.git" -e',
-  },
-})
+-- Fuzzy finder (loaded on first use to keep startup fast)
+local fzf_ready = false
+local function fzf_pick(method)
+  return function()
+    local fzf = require("fzf-lua")
+    if not fzf_ready then
+      fzf.setup({
+        -- Keep the preview inside fzf so clicks cannot focus a separate Neovim buffer.
+        "fzf-native",
+        -- Take fzf's colors from the colorscheme; bat previews follow bin/theme.
+        fzf_colors = true,
+        -- Close the terminal on accept/cancel instead of keeping a hidden picker alive.
+        defaults = { no_hide = true },
+        keymap = { builtin = { ["<Esc>"] = "abort" } },
+        files = { hidden = true },
+        -- Search dotfiles too, but never inside .git (the default rg_opts plus a glob)
+        grep = {
+          hidden = true,
+          rg_opts = '--column --line-number --no-heading --color=always --smart-case '
+            .. '--max-columns=4096 -g "!.git" -e',
+        },
+      })
+      fzf_ready = true
+    end
+    fzf[method]()
+  end
+end
 
 -- Long merged folder chains (Maven packages) keep their last two names and
 -- shorten the rest to initials: test/java/com/acme/billing/service becomes
@@ -291,7 +325,7 @@ vim.api.nvim_create_autocmd("QuitPre", {
             vim.api.nvim_win_close(win, false)
           end
         end
-      else
+      elseif not vim.bo.modified then
         tree.close()
       end
     end
@@ -316,7 +350,7 @@ local function close_buffer(buf)
       vim.cmd(has_other and "bprevious" or "enew")
     end)
   end
-  vim.cmd.bdelete(buf)
+  vim.cmd.bdelete({ args = { tostring(buf) }, bang = vim.bo[buf].buftype == "terminal" })
 end
 
 -- Tab bar of open buffers, starting to the right of the sidebar
@@ -364,8 +398,8 @@ gitsigns.setup({
 })
 
 -- Side-by-side diffs, file/branch history and 3-way merge conflicts.
--- Each key opens its view, or closes whichever diffview is open.
-require("diffview").setup({ enhanced_diff_hl = true })
+-- Configure both direct commands and mappings without loading the view module.
+require("diffview.config").setup({ enhanced_diff_hl = true })
 local function diffview(cmd)
   return function()
     if require("diffview.lib").get_current_view() then
@@ -379,7 +413,20 @@ end
 -- lazygit in a floating terminal. lazygit.yml uses the nvim-remote preset, so
 -- editing a file from lazygit opens it here rather than in a nested Neovim.
 local function lazygit()
+  if vim.fn.executable("lazygit") ~= 1 then
+    vim.notify("Lazygit is unavailable. Install it with brew install lazygit.", vim.log.levels.ERROR)
+    return
+  end
   local prev = vim.api.nvim_get_current_win()
+  if vim.bo[vim.api.nvim_win_get_buf(prev)].filetype == "NvimTree" then
+    for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.api.nvim_win_get_config(w).relative == ""
+          and vim.bo[vim.api.nvim_win_get_buf(w)].filetype ~= "NvimTree" then
+        prev = w
+        break
+      end
+    end
+  end
   local width = math.floor(vim.o.columns * 0.9)
   local height = math.floor(vim.o.lines * 0.85)
   local buf = vim.api.nvim_create_buf(false, true)
@@ -392,8 +439,17 @@ local function lazygit()
     row = math.floor((vim.o.lines - height) / 2),
     col = math.floor((vim.o.columns - width) / 2),
   })
+  -- Add the theme's colors (bin/theme), as .zshrc does for a lazygit started in a
+  -- shell; Neovim itself may have been started without that shell.
+  local lazygit_config = config_home .. "/lazygit/config.yml"
+  local lazygit_theme = config_home .. "/dotfiles-theme/lazygit.yml"
+  local env = nil
+  if vim.uv.fs_stat(lazygit_config) and vim.uv.fs_stat(lazygit_theme) then
+    env = { LG_CONFIG_FILE = lazygit_config .. "," .. lazygit_theme }
+  end
   vim.fn.jobstart({ "lazygit" }, {
     term = true,
+    env = env,
     on_exit = function()
       vim.schedule(function()
         -- A file lazygit opened may have landed in the float; move it back.
@@ -437,20 +493,20 @@ map("n", "<S-h>", "<cmd>BufferLineCyclePrev<cr>", { desc = "Previous buffer" })
 map("n", "<S-l>", "<cmd>BufferLineCycleNext<cr>", { desc = "Next buffer" })
 map("n", "<leader>x", close_buffer, { desc = "Close buffer" })
 
-map("n", "<C-p>", fzf.files, { desc = "Find files" })
-map("n", "<leader>/", fzf.live_grep, { desc = "Live grep" })
-map("n", "<leader>b", fzf.buffers, { desc = "Buffers" })
-map("n", "<leader>h", fzf.helptags, { desc = "Help" })
-map("n", "<leader>d", fzf.diagnostics_document, { desc = "Diagnostics" })
-map("n", "<leader>s", fzf.lsp_document_symbols, { desc = "Symbols" })
-map("n", "<leader><leader>", fzf.resume, { desc = "Resume last picker" })
+map("n", "<C-p>", fzf_pick("files"), { desc = "Find files" })
+map("n", "<leader>/", fzf_pick("live_grep"), { desc = "Live grep" })
+map("n", "<leader>b", fzf_pick("buffers"), { desc = "Buffers" })
+map("n", "<leader>h", fzf_pick("helptags"), { desc = "Help" })
+map("n", "<leader>d", fzf_pick("diagnostics_document"), { desc = "Diagnostics" })
+map("n", "<leader>s", fzf_pick("lsp_document_symbols"), { desc = "Symbols" })
+map("n", "<leader><leader>", fzf_pick("resume"), { desc = "Resume last picker" })
 
 map("n", "<leader>gg", lazygit, { desc = "lazygit" })
 map("n", "<leader>gd", diffview("DiffviewOpen"), { desc = "Diff all changes" })
 map("n", "<leader>gh", diffview("DiffviewFileHistory %"), { desc = "File history" })
 map("n", "<leader>gH", diffview("DiffviewFileHistory"), { desc = "Branch history" })
-map("n", "<leader>gf", fzf.git_status, { desc = "Changed files" })
-map("n", "<leader>gl", fzf.git_branches, { desc = "Branches" })
+map("n", "<leader>gf", fzf_pick("git_status"), { desc = "Changed files" })
+map("n", "<leader>gl", fzf_pick("git_branches"), { desc = "Branches" })
 
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlighting" })
 

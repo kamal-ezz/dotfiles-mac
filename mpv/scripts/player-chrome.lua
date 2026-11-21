@@ -34,11 +34,13 @@ local function render()
   end
 
   -- uosc otherwise removes middle buttons first, including Play/Pause.
-  local expanded = dimensions.w >= 1000
+  local scale = mp.get_property_number("display-hidpi-scale", 1) or 1
+  local expanded = (dimensions.w / (scale > 0 and scale or 1)) >= 1000
   if mp.get_property_native("user-data/player-chrome/expanded") ~= expanded then
     mp.set_property_native("user-data/player-chrome/expanded", expanded)
   end
   if not margins then
+    reserve_video_space(original_bottom)
     overlay:remove()
     return
   end
@@ -79,6 +81,7 @@ local function render()
 end
 
 mp.observe_property("osd-dimensions", "native", render)
+mp.observe_property("display-hidpi-scale", "number", render)
 mp.observe_property("user-data/osc/margins", "native", render)
 mp.observe_property("idle-active", "bool", render)
 mp.register_event("shutdown", function()
